@@ -1,15 +1,17 @@
 import cv2
 import random
 from ultralytics import YOLO
+import numpy as np
+from collections import defaultdict
 
 yolo = YOLO("yolov8s.pt")
-
-def getColours(cls_num):
+track_history = defaultdict(lambda: [])
+def getColors(cls_num):
     """Generate unique colors for each class ID"""
     random.seed(cls_num)
     return tuple(random.randint(0, 255) for _ in range(3))
 
-video_path = "snowStatue.mp4"
+video_path = "videos/Mallard.mp4"
 videoCap = cv2.VideoCapture(video_path)
 
 fourcc = cv2.VideoWriter.fourcc(*'MPEG')  # Codec
@@ -19,28 +21,29 @@ while videoCap.isOpened():
     ret, frame = videoCap.read()
     if not ret:
         break
-    results = yolo.track(frame, stream=True)
+    results = yolo.track(frame, persist=True)
+    result = results[0]
+    class_names = result.names
 
-    for result in results:
-        class_names = result.names
-        for box in result.boxes:
-            if box.conf[0] > 0.4:
-                x1, y1, x2, y2 = map(int, box.xyxy[0])
-
-                cls = int(box.cls[0])
-                class_name = class_names[cls]
-
-                conf = float(box.conf[0])
-
-                colour = getColours(cls)
-
-                cv2.rectangle(frame, (x1, y1), (x2, y2), colour, 2)
-
-                cv2.putText(frame, f"{class_name} {conf:.2f}",
-                            (x1, max(y1 - 10, 20)), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.6, colour, 2)
+        # Get the boxes and track IDs
+    if result.boxes and result.boxes.is_track:
+        boxes = result.boxes.xywh.cpu()
+        names = result.names
+        track_ids = result.boxes.id.int().cpu().tolist()
+            # Visualize the result on the frame
+        frame = result.plot()
+            # Plot the tracks
+        for box, track_id in zip(boxes, track_ids):
+                x, y, w, h = box
+                track = track_history[track_id]
+                track.append((float(x), float(y)))  # x, y center point
+                if len(track) > 100:  # retain for 60 frames
+                    track.pop(0)
+                # Draw the tracking lines
+                points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                color = getColors(track_id)
+                cv2.polylines(frame, [points], isClosed=False, color=color, thickness=2)
     out.write(frame)
-
 videoCap.release()
 out.release()
 cv2.destroyAllWindows()
