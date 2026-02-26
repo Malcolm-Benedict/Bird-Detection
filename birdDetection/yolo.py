@@ -3,8 +3,12 @@ import random
 from ultralytics import YOLO
 import numpy as np
 from collections import defaultdict
+import torch
 
-yolo = YOLO("yolov8s.pt")
+#model = YOLO("yolo26n.pt")
+#model.export(format="engine")  # dla:0 or dla:1 corresponds to the DLA cores
+yolo = YOLO("yolo26n.engine")
+
 track_history = defaultdict(lambda: [])
 def getColors(cls_num):
     """Generate unique colors for each class ID"""
@@ -27,9 +31,9 @@ while videoCap.isOpened():
 
         # Get the boxes and track IDs
     if result.boxes and result.boxes.is_track:
-        boxes = result.boxes.xywh.cpu()
+        boxes = result.boxes.xywh
         names = result.names
-        track_ids = result.boxes.id.int().cpu().tolist()
+        track_ids = result.boxes.id.int().tolist()
             # Visualize the result on the frame
         frame = result.plot()
             # Plot the tracks
