@@ -1,43 +1,39 @@
-from scipy import stats
-import math as m
-class BirdTrack():
-    def __init__(self, initial_point):
-        self.track = []
-        self.track.append(initial_point)
+import cv2
+import random
+from ultralytics import YOLO
+import numpy as np
+from collections import defaultdict
 
-    def add_point(self, point):
-        self.track.append(point)
+class YoloTracker:
+    def __init__(self,model):
+        self.model = YOLO(model)
+        self.track_history = defaultdict(lambda: [])
+     
+    def get_colors(self,num):
+        """Generate unique colors for each class ID"""
+        random.seed(num)
+        return tuple(random.randint(0, 255) for _ in range(3))
 
-    def geometry_track(self, n_points, theta_floor):
-        COLLISION = GeometryMethod(self.track,n_points,theta_floor)
-        return COLLISION 
-    
-class GeometryMethod():
-    def __init__(self, track, n_points, theta_floor):
-        theta_floor = theta_floor * (m.pi/180)
-        lenTrack = len(track) - 1
-        lenA = m.floor(n_points/2)
-        self.trackA = []
-        self.trackB = []
-        for i in track[lenTrack: lenTrack - lenA : -1]:
-            self.trackA.append(i)
-        for i in track[lenTrack - lenA - 1: lenTrack - n_points : -1]:
-            self.trackB.append(i)
-        self.lineA = self.get_line(self.trackA)
-        self.lineB = self.get_line(self.trackB)
-        self.theta = self.get_angle(self.lineA, self.lineB)
-        if self.theta < theta_floor:
-            return True
-        else:
-            return False
-
-    def get_line(self, points):
-        x = points[:0]
-        y = points[:1]
-        regression = stats.linregress(x,y)
-        return regression
-
-    def get_angle(self, lineA, lineB):
-        theta = m.atan2((lineA.slope - lineB.slope),(1 + (lineA.slope * lineB.slope)))
-        return theta
-    
+    def track_frame(self,frame):
+        results = self.model.track(frame, persist=True)
+        result = results[0]
+        class_names = result.names
+            # Get the boxes and track IDs
+        if result.boxes and result.boxes.is_track:
+            boxes = result.boxes.xywh
+            names = result.names
+            track_ids = result.boxes.id.int().tolist()
+                # Visualize the result on the frame
+            frame = result.plot()
+                # Plot the tracks
+            for box, track_id in zip(boxes, track_ids):
+                    x, y, w, h = box
+                    track = self.track_history[track_id]
+                    track.append((float(x), float(y)))  # x, y center point
+                    if len(track) > 100:  # retain for 60 frames
+                        track.pop(0)
+                    # Draw the tracking lines
+                    points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                    color = self.get_colors(track_id)
+                    cv2.polylines(frame, [points], isClosed=False, color=color, thickness=2)
+        return frame
