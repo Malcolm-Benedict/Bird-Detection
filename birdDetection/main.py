@@ -14,17 +14,27 @@ parser = argparse.ArgumentParser(
                     description='detects birds',
                     epilog='todo')
 parser.add_argument('model')
-parser.add_argument('videoSource')
+parser.add_argument('videoSource',choices=['V4Lwebcam', 'video', 'GstreamerCam'])
 parser.add_argument('-s','--save', action="store_true")
 args = parser.parse_args()
+
 model = args.model
 if args.save:
     SAVE_OUTPUT = True
 else:
     SAVE_OUTPUT = False
 
+match args.videoSource:
+    case 'V4Lwebcam':
+        videoCap = cv2.VideoCapture(0)
+    case 'video':
+        videoCap = cv2.VideoCapture(0)
+    case 'GstreamerCam':
+        videoCap = cv2.VideoCapture(0)
+    case _:
+        print("video source error!")
+        exit()
 
-videoCap = cv2.VideoCapture(0)
 if not videoCap.isOpened():
         print("Error: Cannot open video capture")
         exit()
