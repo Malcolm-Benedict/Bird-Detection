@@ -1,17 +1,5 @@
 from scipy import stats
 import math as m
-class BirdTrack():
-    def __init__(self, initial_point):
-        self.track = []
-        self.track.append(initial_point)
-
-    def add_point(self, point):
-        self.track.append(point)
-
-    def geometry_track(self, n_points, theta_floor):
-        COLLISION = GeometryMethod(self.track,n_points,theta_floor)
-        return COLLISION 
-    
 class GeometryMethod():
     def __init__(self, track, n_points, theta_floor):
         theta_floor = theta_floor * (m.pi/180)
