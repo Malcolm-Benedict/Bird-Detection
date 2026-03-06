@@ -87,9 +87,11 @@ while videoCap.isOpened():
                     x, y, w, h = box
                     track = tracker.track_history[track_id]
                     track.append((float(x), float(y)))  
-                    if len(track) > 100:  
+                    if len(track) > 3:  
                             track.pop(0)
                     points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                    print(points)
+                    #detector = GeometryMethod(points,4,10)
                     random.seed(track_id)
                     color = tuple(random.randint(0, 255) for _ in range(3))
                     cv2.polylines(frame, [points], isClosed=False, color=color, thickness=2)
