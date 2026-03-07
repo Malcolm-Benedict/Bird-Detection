@@ -70,6 +70,7 @@ fourCC = cv2.VideoWriter.fourcc(*'mp4v')  # Codec
 saveName = OUTPUT_PATH+'output-'+current_time+'.mp4'
 out = cv2.VideoWriter(saveName, fourCC, 30, (frameWidth, frameHeight))
 tracker = YoloTracker(MODEL_PATH+str(model))
+detector = GeometryMethod(45)
 
 while videoCap.isOpened():
     ret, frame = videoCap.read()
@@ -83,18 +84,20 @@ while videoCap.isOpened():
             track_ids = result.boxes.id.int().tolist()
             frame = result.plot()
             for box, cls, track_id in zip(boxes, class_ids, track_ids):
-                    name = result.names[int(cls)]
-                    x, y, w, h = box
-                    track = tracker.track_history[track_id]
-                    track.append((float(x), float(y)))  
-                    if len(track) > 3:  
-                            track.pop(0)
-                    points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                    print(points)
-                    #detector = GeometryMethod(points,4,10)
-                    random.seed(track_id)
-                    color = tuple(random.randint(0, 255) for _ in range(3))
-                    cv2.polylines(frame, [points], isClosed=False, color=color, thickness=2)
+                name = result.names[int(cls)]
+                x, y, w, h = box
+                track = tracker.track_history[track_id]
+                track.append((float(x), float(y)))  
+                if len(track) > 20:  
+                    track.pop(0)
+                points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                if True and (len(track) >= 2): # check cls
+                    COLLISION_DETECTED = detector.detect(track)
+                    if COLLISION_DETECTED:
+                        print("\033[31mCOLLISION!\033[0m")
+                random.seed(track_id)
+                color = tuple(random.randint(0, 255) for _ in range(3))
+                cv2.polylines(frame, [points], isClosed=False, color=color, thickness=2)
 
     cv2.imshow('Camera',frame)
     out.write(frame)
