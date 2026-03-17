@@ -1,0 +1,9 @@
+---
+>
+        "v4l2src device=/dev/video0 "
+        "video/x-raw, width=1920 height=1080, framerate=30/1 ! "
+        "nvvidconv ! "
+        "video/x-raw, format=BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=BGR ! "
+        "appsink"

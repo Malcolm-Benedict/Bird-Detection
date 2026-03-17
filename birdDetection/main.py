@@ -44,7 +44,8 @@ elif source == "video":
 elif source == "gstreamer": # incorrect syntax
     with open(CONFIG_PATH+args.config_path, 'r') as file:
         cfg = yaml.safe_load(file)
-        videoCap = cv2.VideoCapture(cfg,cv2.CAP_GSTREAMER)
+        camSet='v4l2src device=/dev/video0 ! video/x-raw,width=640,height=480,framerate=30/1 ! nvvidconv flip-method=0 ! video/x-raw(memory:NVMM) ! nvvidconv ! video/x-raw, format=SRGB ! videoconvert ! video/x-raw, format=BGR ! queue ! appsink drop=1'
+        videoCap = cv2.VideoCapture(camSet,cv2.CAP_GSTREAMER)
 else:
     print("Please specify video source!")
     exit()
