@@ -4,7 +4,6 @@ from tracker import YoloTracker
 from detector import GeometryMethod
 import datetime
 import argparse
-import yaml
 import os
 import atexit
 import random
@@ -14,6 +13,26 @@ OUTPUT_PATH = 'outputs/'
 VIDEO_PATH = 'videos/'
 CONFIG_PATH = 'config/'
 
+def gstreamer_pipeline(
+    capture_width=1920,
+    capture_height=1080,
+    framerate=30,
+    flip_method=2,
+    process_width=960,
+    process_height=720
+):
+    return (
+        "nvarguscamerasrc ! "
+        "video/x-raw(memory:NVMM), "
+        "width=(int)%d, height=(int)%d, "
+        "format=(string)NV12, framerate=(fraction)%d/1 ! "
+        "nvvidconv flip-method=%d ! "
+        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
+        "videoconvert ! "
+        "video/x-raw, format=(string)BGR ! appsink"
+        % (capture_width, capture_height, framerate, flip_method, process_width, process_height)
+    )
+    
 current_time = str(datetime.datetime.now().isoformat())
 
 parser = argparse.ArgumentParser(
@@ -28,7 +47,6 @@ webcamSP = subparsers.add_parser("webcam")
 videoSP = subparsers.add_parser("video")
 videoSP.add_argument("video_path")
 gsSP = subparsers.add_parser("gstreamer")
-gsSP.add_argument("config_path")
 args = parser.parse_args()
 model = args.model
 source = args.source
@@ -41,11 +59,8 @@ if source == "webcam":
     videoCap = cv2.VideoCapture(0)
 elif source == "video":
     videoCap = cv2.VideoCapture(VIDEO_PATH+args.video_path)
-elif source == "gstreamer": # incorrect syntax
-    with open(CONFIG_PATH+args.config_path, 'r') as file:
-        cfg = yaml.safe_load(file)
-        camSet='v4l2src device=/dev/video0 ! video/x-raw,width=640,height=480,framerate=30/1 ! nvvidconv flip-method=0 ! video/x-raw(memory:NVMM) ! nvvidconv ! video/x-raw, format=SRGB ! videoconvert ! video/x-raw, format=BGR ! queue ! appsink drop=1'
-        videoCap = cv2.VideoCapture(camSet,cv2.CAP_GSTREAMER)
+elif source == "gstreamer":
+    videoCap = cv2.VideoCapture(gstreamer_pipeline(),cv2.CAP_GSTREAMER)
 else:
     print("Please specify video source!")
     exit()
@@ -54,6 +69,12 @@ def exit_handler():
     videoCap.release()
     out.release()
     cv2.destroyAllWindows()
+    if not DESTROY_OUTPUT: # This isn't exactly elegant, but it prevents warnings.
+        try:
+            out.release()
+            
+        except:
+            print("Error, unable to save output")
     if DESTROY_OUTPUT: # This isn't exactly elegant, but it prevents warnings.
         try:
             os.remove(saveName)
@@ -65,6 +86,7 @@ atexit.register(exit_handler)
 if not videoCap.isOpened():
         print("Error: Cannot open video capture")
         exit()
+        
 frameWidth = int(videoCap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frameHeight = int(videoCap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fourCC = cv2.VideoWriter.fourcc(*'mp4v')  # Codec
