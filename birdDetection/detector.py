@@ -1,4 +1,5 @@
-from scipy import stats
+from scipy import stats, interpolate
+import numpy as np
 import math as m
 class GeometryMethod():
     def __init__(self, theta_floor):
@@ -36,3 +37,24 @@ class GeometryMethod():
         theta = m.atan2((lineA.slope - lineB.slope),(1 + (lineA.slope * lineB.slope)))
         return theta
     
+class DerivativeMethod():
+    def __init__(self, floor):
+        self.floor = floor
+        
+    def split(self, points):
+        x, _ = zip(*points)
+        #print("x: ",x)
+        _, y = zip(*points)
+        #print("y: ",y)
+        return np.asarray(x), np.asarray(y)
+        
+    def detect(self,track):
+        x, y = self.split(track)
+        try: 
+            spline = interpolate.make_splrep(x,y,s=0)
+            der = spline(x,2)
+            if abs(der.any()) > self.floor:
+                return True
+        except:
+            print("Warning: unable to get derivative")
+            return False

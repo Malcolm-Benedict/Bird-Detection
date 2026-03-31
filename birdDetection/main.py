@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from tracker import YoloTracker
-from detector import GeometryMethod
+from detector import GeometryMethod, DerivativeMethod
 import datetime
 import argparse
 import os
@@ -93,7 +93,8 @@ fourCC = cv2.VideoWriter.fourcc(*'mp4v')  # Codec
 saveName = OUTPUT_PATH+'output-'+current_time+'.mp4'
 out = cv2.VideoWriter(saveName, fourCC, 30, (frameWidth, frameHeight))
 tracker = YoloTracker(MODEL_PATH+str(model))
-detector = GeometryMethod(45)
+#detector = GeometryMethod(45)
+detector = DerivativeMethod(5)
 
 while videoCap.isOpened():
     ret, frame = videoCap.read()
