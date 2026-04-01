@@ -1,0 +1,31 @@
+general:
+  input_method: webcam
+  save_output: False
+  track_length: 20
+
+paths:
+  MODEL_PATH : 'models/'
+  OUTPUT_PATH : 'outputs/'
+  VIDEO_PATH : 'videos/'
+  CONFIG_PATH : 'config/'
+
+gstreamer:
+  source: 'nvarguscamerasrc'
+  file_location: 'video/x-raw'
+  memory: NVMM
+  input_width: 1920
+  input_height: 1080
+  input_format: NV12
+  framerate: 30
+  flip_method: 2
+  output_width: 960
+  output_height: 720
+  output_format: BGRx
+  sink_format: BGR
+  sink: appsink
+
+model: yolo26n.pt
+
+detector:
+  type: GeometryMethod
+  threshold: 45  
