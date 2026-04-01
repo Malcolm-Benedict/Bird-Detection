@@ -2,4 +2,4 @@
 tests/
 .vscode/
 outputs/*
-__pycache__/*
+birDetection/__pycache__/*
