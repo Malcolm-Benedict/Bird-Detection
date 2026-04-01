@@ -1,36 +1,29 @@
 import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
+#from detector import GeometryMethod, DerivativeMethod
+class DerivativeMethod():
+    def __init__(self, floor):
+        self.floor = floor
+        
+    def split(self, points):
+        x, _ = zip(*points)
+        print("x: ",x)
+        _, y = zip(*points)
+        print("y: ",y)
+        return np.asarray(x), np.asarray(y)
+        
+    def detect(self,track):
+        x, y = self.split(track)
+        #print(track) 
+        spline = interpolate.make_splrep(x,y,s=0)
+        der = spline(x,2)
+        if abs(der.any()) > self.floor:
+            return True
+        else:
+            return False
 
-# Weather data: days and corresponding temperatures for Chicago
-days = np.array([0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360])
-temps = np.array([32, 35, 45, 58, 70, 80, 85, 83, 75, 62, 48, 38, 33])
-
-# Create a spline interpolation
-tck = interpolate.make_splrep(days, temps, s=0)
-
-# New x-axis for smooth curve
-days_fine = np.linspace(0, 360, 1000)
-
-# Get interpolated temperatures
-temps_smooth = interpolate.splev(days_fine, tck, der=0)
-
-# Get first derivative
-temps_derivative = interpolate.splev(days_fine, tck, der=1)
-
-# Plotting
-plt.figure(figsize=(12, 6))
-plt.subplot(2, 1, 1)
-plt.plot(days, temps, 'o', label='Data points')
-plt.plot(days_fine, temps_smooth, label='Interpolated')
-plt.title('Chicago Temperature Throughout the Year')
-plt.ylabel('Temperature (°F)')
-plt.legend()
-
-plt.subplot(2, 1, 2)
-plt.plot(days_fine, temps_derivative)
-plt.title('Rate of Temperature Change')
-plt.xlabel('Day of Year')
-plt.ylabel('°F per day')
-plt.tight_layout()
-plt.show()
+#track = [(40.8238525390625, 438.37408447265625), (40.86150360107422, 438.55987548828125), (40.72522735595703, 438.50579833984375), (40.666568756103516, 438.41595458984375), (40.43659973144531, 438.43951416015625), (40.45899200439453, 438.476806640625), (40.40176010131836, 438.7016296386719), (40.39478302001953, 438.53472900390625), (40.40583038330078, 438.56640625), (40.44089126586914, 438.5576171875), (40.444091796875, 438.4739990234375), (40.461612701416016, 438.5345458984375), (40.406314849853516, 438.7352600097656), (40.45573806762695, 438.6986083984375), (40.477909088134766, 438.712158203125), (40.465091705322266, 438.65594482421875), (40.580230712890625, 438.3094787597656), (40.49394226074219, 438.504150390625), (40.491153717041016, 438.7554931640625), (40.61286926269531, 438.67041015625)]
+track = [(40.8238525390625, 438.37408447265625), (40.86150360107422, 438.55987548828125), (40.72522735595703, 438.50579833984375), (40.666568756103516, 438.41595458984375), (40.43659973144531, 438.43951416015625)]
+detector = DerivativeMethod(5)
+print(detector.detect(track))

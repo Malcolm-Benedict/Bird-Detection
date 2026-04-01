@@ -43,13 +43,14 @@ class DerivativeMethod():
         
     def split(self, points):
         x, _ = zip(*points)
-        #print("x: ",x)
+        print("x: ",x)
         _, y = zip(*points)
-        #print("y: ",y)
+        print("y: ",y)
         return np.asarray(x), np.asarray(y)
         
     def detect(self,track):
         x, y = self.split(track)
+        print(track)
         try: 
             spline = interpolate.make_splrep(x,y,s=0)
             der = spline(x,2)
