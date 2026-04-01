@@ -2,68 +2,36 @@ import cv2
 import numpy as np
 from tracker import YoloTracker
 from detector import GeometryMethod
+from argumentParser import Args
+import yaml
 import datetime
 import argparse
 import os
 import atexit
 import random
 
-MODEL_PATH = 'models/'
-OUTPUT_PATH = 'outputs/'
-VIDEO_PATH = 'videos/'
-CONFIG_PATH = 'config/'
+parser = argparse.ArgumentParser(prog='birdDetection', description='detects birds', epilog='todo')
+parser.add_argument('configPath')
+cmd_args = parser.parse_args()
+configPath = cmd_args.configPath
 
-def gstreamer_pipeline(
-    capture_width=1920,
-    capture_height=1080,
-    framerate=30,
-    flip_method=2,
-    process_width=960,
-    process_height=720
-):
-    return (
-        "nvarguscamerasrc ! "
-        "video/x-raw(memory:NVMM), "
-        "width=(int)%d, height=(int)%d, "
-        "format=(string)NV12, framerate=(fraction)%d/1 ! "
-        "nvvidconv flip-method=%d ! "
-        "video/x-raw, width=(int)%d, height=(int)%d, format=(string)BGRx ! "
-        "videoconvert ! "
-        "video/x-raw, format=(string)BGR ! appsink"
-        % (capture_width, capture_height, framerate, flip_method, process_width, process_height)
-    )
-    
-current_time = str(datetime.datetime.now().isoformat())
+args = Args(configPath)
 
-parser = argparse.ArgumentParser(
-                    prog='birdDetection',
-                    description='detects birds',
-                    epilog='todo')
-parser.add_argument('model')
-parser.add_argument('-s','--save', action="store_true")
-subparsers = parser.add_subparsers(dest='source', help='Video sources')
-
-webcamSP = subparsers.add_parser("webcam")
-videoSP = subparsers.add_parser("video")
-videoSP.add_argument("video_path")
-gsSP = subparsers.add_parser("gstreamer")
-args = parser.parse_args()
+model_path = args.model_path
+output_path = args.output_path
+video_path = args.video_path
+video_source = args.video_source
+SAVE_OUTPUT = args.SAVE_OUTPUT
+track_length = args.track_length
+capture_args = args.make_video_source()
 model = args.model
-source = args.source
 
-if args.save:
+if SAVE_OUTPUT:
     DESTROY_OUTPUT = False
 else:
     DESTROY_OUTPUT = True
-if source == "webcam":
-    videoCap = cv2.VideoCapture(0)
-elif source == "video":
-    videoCap = cv2.VideoCapture(VIDEO_PATH+args.video_path)
-elif source == "gstreamer":
-    videoCap = cv2.VideoCapture(gstreamer_pipeline(),cv2.CAP_GSTREAMER)
-else:
-    print("Please specify video source!")
-    exit()
+
+videoCap = cv2.VideoCapture(capture_args)
 
 def exit_handler():
     videoCap.release()
@@ -71,14 +39,12 @@ def exit_handler():
     cv2.destroyAllWindows()
     if not DESTROY_OUTPUT: # This isn't exactly elegant, but it prevents warnings.
         try:
-            out.release()
-            
+            out.release()  
         except:
             print("Error, unable to save output")
     if DESTROY_OUTPUT: # This isn't exactly elegant, but it prevents warnings.
         try:
             os.remove(saveName)
-            
         except:
             print("Error, unable to delete output")
 atexit.register(exit_handler)
@@ -90,9 +56,10 @@ if not videoCap.isOpened():
 frameWidth = int(videoCap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frameHeight = int(videoCap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fourCC = cv2.VideoWriter.fourcc(*'mp4v')  # Codec
-saveName = OUTPUT_PATH+'output-'+current_time+'.mp4'
+current_time = str(datetime.datetime.now().isoformat())
+saveName = output_path+'output-'+current_time+'.mp4'
 out = cv2.VideoWriter(saveName, fourCC, 30, (frameWidth, frameHeight))
-tracker = YoloTracker(MODEL_PATH+str(model))
+tracker = YoloTracker(model_path+str(model))
 detector = GeometryMethod(45)
 
 while videoCap.isOpened():

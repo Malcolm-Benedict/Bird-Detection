@@ -4,14 +4,20 @@ general:
   track_length: 20
 
 paths:
-  MODEL_PATH : 'models/'
-  OUTPUT_PATH : 'outputs/'
-  VIDEO_PATH : 'videos/'
-  CONFIG_PATH : 'config/'
+  model_path: 'models/'
+  output_path: 'outputs/'
+  video_path: 'videos/'
+
+model: yolo26n.pt
+
+detector: GeometryMethod
+
+geometry_prams:
+  threshold: 45  
 
 gstreamer:
   source: 'nvarguscamerasrc'
-  file_location: 'video/x-raw'
+  file: 'video/x-raw'
   memory: NVMM
   input_width: 1920
   input_height: 1080
@@ -23,9 +29,3 @@ gstreamer:
   output_format: BGRx
   sink_format: BGR
   sink: appsink
-
-model: yolo26n.pt
-
-detector:
-  type: GeometryMethod
-  threshold: 45  
