@@ -19,20 +19,18 @@ args = Args(configPath)
 
 model_path = args.model_path
 output_path = args.output_path
-video_path = args.video_path
 video_source = args.video_source
 SAVE_OUTPUT = args.SAVE_OUTPUT
 track_length = args.track_length
-capture_args = args.make_video_source()
+videoCap = args.make_video_source()
+detector = args.make_detector()
 model = args.model
 
 if SAVE_OUTPUT:
     DESTROY_OUTPUT = False
 else:
     DESTROY_OUTPUT = True
-
-videoCap = cv2.VideoCapture(capture_args)
-
+    
 def exit_handler():
     videoCap.release()
     out.release()
@@ -59,8 +57,7 @@ fourCC = cv2.VideoWriter.fourcc(*'mp4v')  # Codec
 current_time = str(datetime.datetime.now().isoformat())
 saveName = output_path+'output-'+current_time+'.mp4'
 out = cv2.VideoWriter(saveName, fourCC, 30, (frameWidth, frameHeight))
-tracker = YoloTracker(model_path+str(model))
-detector = GeometryMethod(45)
+tracker = YoloTracker(model_path + model)
 
 while videoCap.isOpened():
     ret, frame = videoCap.read()

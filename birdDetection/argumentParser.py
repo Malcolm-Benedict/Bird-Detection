@@ -1,12 +1,16 @@
 import yaml
+from detector import GeometryMethod
+import cv2
 class Args():
+    """
+    Load arguments from the specified yaml, and process some of them. The yaml is designed to be human readable, 
+    """
     def __init__(self, yaml_path):  
         with open(yaml_path, 'r') as f:
             self.config = yaml.safe_load(f)
             
         self.model_path = self.config["paths"]["model_path"]
         self.output_path = self.config["paths"]["output_path"]
-        self.video_path = self.config["paths"]["video_path"]
         
         self.video_source = self.config["general"]["input_method"]
         self.SAVE_OUTPUT = self.config["general"]["save_output"]
@@ -28,12 +32,20 @@ class Args():
 
     def make_video_source(self):
         if self.video_source == "webcam":
-            capture_args = 0
+            capture = cv2.VideoCapture(0)
         elif self.video_source == "video":
-            capture_args = self.video_path + self.video_source
+            capture = cv2.VideoCapture(self.config["paths"]["video_path"] + self.config["video"])
         elif self.video_source == "gstreamer":
-            capture_args = self.make_gstreamer_pipeline()+", cv2.CAP_GSTREAMER"
+            capture = cv2.VideoCapture(self.make_gstreamer_pipeline(), cv2.CAP_GSTREAMER)
         else:
             print("Please specify video source!")
             exit()
-        return capture_args
+        return capture
+
+    def make_detector(self):
+        if self.config["detector"] == "GeometryMethod":
+            detector = GeometryMethod(self.config["geometry_prams"]["threshold"])
+        else:
+            print("Please specify detector!")
+            exit()
+        return detector

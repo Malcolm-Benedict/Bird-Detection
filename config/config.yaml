@@ -1,5 +1,6 @@
 general:
-  input_method: webcam
+  # acceptable inputs: webcam, video, gstreamer
+  input_method: video
   save_output: False
   track_length: 20
 
@@ -9,7 +10,9 @@ paths:
   video_path: 'videos/'
 
 model: yolo26n.pt
+video: Mallard.mp4
 
+# valid detectors: GeometryMethod
 detector: GeometryMethod
 
 geometry_prams:
