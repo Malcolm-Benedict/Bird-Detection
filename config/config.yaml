@@ -1,8 +1,9 @@
 general:
   # acceptable inputs: webcam, video, gstreamer
-  input_method: video
+  input_method: webcam
   save_output: False
   track_length: 20
+  
 
 paths:
   model_path: 'models/'
@@ -13,11 +14,13 @@ model: yolo26n.pt
 video: Mallard.mp4
 
 # valid detectors: GeometryMethod
-detector: GeometryMethod
-
-geometry_prams:
-  threshold: 45  
-
+detector: 
+  type: GeometryMethod
+  threshold: 45 # Angle for GeometryMethod
+  target_name: #leave blank to check all objects
+  confidence_threshold: 0.8
+  refractory_frames: 40
+  
 gstreamer:
   source: 'nvarguscamerasrc'
   file: 'video/x-raw'

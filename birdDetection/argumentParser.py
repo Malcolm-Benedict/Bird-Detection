@@ -43,8 +43,11 @@ class Args():
         return capture
 
     def make_detector(self):
-        if self.config["detector"] == "GeometryMethod":
-            detector = GeometryMethod(self.config["geometry_prams"]["threshold"])
+        if self.config["detector"]['type'] == "GeometryMethod":
+            detector = GeometryMethod(self.config["detector"]['threshold'])
+            self.target_name = self.config["detector"]["target_name"]
+            self.confidence_threshold = self.config["detector"]["confidence_threshold"]
+            self.refractory_frames = self.config["detector"]["refractory_frames"]
         else:
             print("Please specify detector!")
             exit()
