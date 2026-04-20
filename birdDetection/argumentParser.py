@@ -3,7 +3,19 @@ from detector import GeometryMethod
 import cv2
 class Args():
     """
-    Load arguments from the specified yaml, and process some of them. The yaml is designed to be human readable, 
+    Load arguments from the specified yaml. General params :
+    
+    **model_path**   : File path to the model
+    
+    **output_path**  : File path to the output
+    
+    **video_source** : Input method
+    
+    **SAVE_OUTPUT**  : Flag to save the output
+    
+    **track_length** : How many points are kept in the track. Older points are discarded
+    
+    **model**        : Model name
     """
     def __init__(self, yaml_path):  
         with open(yaml_path, 'r') as f:
@@ -18,6 +30,12 @@ class Args():
         self.model = self.config["model"]
           
     def make_gstreamer_pipeline(self):
+        """
+        Construct the gstreamer pipeline.
+
+        Returns:
+            Out:_A gstreamer video pipeline_ 
+        """
         pipe = self.config["gstreamer"]
         return (
             pipe["source"]+" ! "
@@ -31,6 +49,11 @@ class Args():
         )
 
     def make_video_source(self):
+        """ Builds the cv2  video source
+
+        Returns:
+            capture: _A cv2 video source_
+        """
         if self.video_source == "webcam":
             capture = cv2.VideoCapture(0)
         elif self.video_source == "video":
@@ -43,6 +66,11 @@ class Args():
         return capture
 
     def make_detector(self):
+        """Builds the detector and sets params.
+
+        Returns:
+            Detector: _Detector class instance_
+        """
         if self.config["detector"]['type'] == "GeometryMethod":
             detector = GeometryMethod(self.config["detector"]['threshold'])
             self.target_name = self.config["detector"]["target_name"]

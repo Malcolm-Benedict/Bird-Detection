@@ -1,8 +1,7 @@
 general:
-  # acceptable inputs: webcam, video, gstreamer
-  input_method: webcam
+  input_method: webcam # acceptable inputs: webcam, video, gstreamer
   save_output: False
-  track_length: 20
+  track_length: 20 # How many points will be saved in the track
   
 
 paths:
@@ -10,16 +9,15 @@ paths:
   output_path: 'outputs/'
   video_path: 'videos/'
 
-model: yolo26n.pt
+model: yolo26n.pt # The Jetson uses .engine models
 video: Mallard.mp4
 
-# valid detectors: GeometryMethod
 detector: 
-  type: GeometryMethod
+  type: GeometryMethod # Valid detectors: GeometryMethod
   threshold: 45 # Angle for GeometryMethod
-  target_name: #leave blank to check all objects
-  confidence_threshold: 0.8
-  refractory_frames: 40
+  target_name: # Leave blank to check all objects
+  confidence_threshold: 0.8 # The model returns a confidence score between 0 and 1
+  refractory_frames: 40 # How many frames after a detection will the model ignore the track to prevent double events
   
 gstreamer:
   source: 'nvarguscamerasrc'
