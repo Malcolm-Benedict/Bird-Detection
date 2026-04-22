@@ -1,5 +1,5 @@
 general:
-  input_method: webcam # acceptable inputs: webcam, video, gstreamer
+  input_method: gstreamer # acceptable inputs: webcam, video, gstreamer
   save_output: False
   track_length: 20 # How many points will be saved in the track
   show_output: True # Whether or not the video feed will be shown
@@ -10,7 +10,7 @@ paths:
   output_path: 'outputs/'
   video_path: 'videos/'
 
-model: yolo26n.pt # The Jetson uses .engine models
+model: yolo26n.engine # The Jetson uses .engine models
 video: Mallard.mp4
 
 detector: 

@@ -38,6 +38,7 @@ class Args():
             Out:_A gstreamer video pipeline_ 
         """
         pipe = self.config["gstreamer"]
+        print("Building gstreamer pipeline..")
         return (
             pipe["source"]+" ! "
             +pipe["file"]+"(memory:"+pipe["memory"]+"), "
@@ -55,6 +56,7 @@ class Args():
         Returns:
             capture: _A cv2 video source_
         """
+        print("Getting video source...")
         if self.video_source == "webcam":
             capture = cv2.VideoCapture(0)
         elif self.video_source == "video":
