@@ -27,6 +27,7 @@ class Args():
         self.video_source = self.config["general"]["input_method"]
         self.SAVE_OUTPUT = self.config["general"]["save_output"]
         self.track_length = self.config["general"]["track_length"]
+        self.SHOW_OUTPUT = self.config["general"]["show_output"]
         self.model = self.config["model"]
           
     def make_gstreamer_pipeline(self):

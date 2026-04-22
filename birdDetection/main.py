@@ -107,11 +107,12 @@ while videoCap.isOpened():
         if i[1] < 1: ignore_list.remove(i) # Remove tracks that have been on the list for more than a given amount of time
 
     # Display and save output.
-    try:
-        cv2.imshow('Camera',frame)
-        cv2.waitKey(1)
-    except:
-        _ = 0
+    if args.SHOW_OUTPUT:
+        try:
+            cv2.imshow('Camera',frame)
+            cv2.waitKey(1)
+        except:
+            _ = 0
     
     try:
         out.write(frame)
