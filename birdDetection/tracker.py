@@ -16,7 +16,7 @@ class YoloTracker:
         self.model = YOLO(model_name, task="track", verbose=do_verbose)
         self.track_history = defaultdict(lambda: [])
 
-    def get_results(self,frame,do_verbose):
+    def get_results(self,frame,do_verbose,conf):
         """Get the results for a frame.
 
         Args:
@@ -25,5 +25,5 @@ class YoloTracker:
         Returns:
             results (ultralytics results object): the results for this frame
         """
-        results = self.model.track(frame, stream=True, persist=True, tracker="bytetrack.yaml",verbose=do_verbose)
+        results = self.model.track(frame, stream=True, persist=True, tracker="bytetrack.yaml",verbose=do_verbose, conf=conf)
         return results

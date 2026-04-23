@@ -23,6 +23,7 @@ args = Args(configPath)
 videoCap = args.make_video_source()
 detector = args.make_detector()
 model = args.model
+conf = args.model_conf
     
 def exit_handler():
     videoCap.release()
@@ -52,7 +53,8 @@ if args.SAVE_OUTPUT:
 # Initialize the tracker
 tracker = YoloTracker(args.model_path + model,cmd_args.verbose)
 ignore_list = []
-
+override_frames = 0
+global diamond
 # Loop to process incoming frames
 while videoCap.isOpened(): 
     ret, frame = videoCap.read()
@@ -60,7 +62,7 @@ while videoCap.isOpened():
         break
     
     # Call the tracker
-    results = tracker.get_results(frame, cmd_args.verbose)
+    results = tracker.get_results(frame, cmd_args.verbose,conf)
     for result in results:
         if result.boxes and result.boxes.is_track:
             
@@ -90,11 +92,13 @@ while videoCap.isOpened():
                     valid_name = name # If no name is specified, set the name valid name equal to the current one to process all tracks
                 
                 # Only run the detector for valid tracks    
-                if (name == valid_name) and (prob > args.confidence_threshold) and (track_id not in map(operator.itemgetter(0),ignore_list)) and (len(track) >= 4):
+                if (name == valid_name) and (prob > args.confidence_threshold) and (track_id not in map(operator.itemgetter(0),ignore_list)) and (len(track) >= 4) and (override_frames < 1):
                     COLLISION_DETECTED = detector.detect(track) # The COLLISION_DETECTED flag is used for modularity
                     if COLLISION_DETECTED:
                         print("\033[31mCOLLISION!\033[0m")
+                        diamond = np.array([[int(x),int(y-10)],[int(x+10),int(y)],[int(x),int(y+10)],[int(x-10),int(y)]])
                         ignore_list.append([track_id, args.refractory_frames]) # Add the box to the ignore list with a timer value
+                        override_frames += args.override_frames
                         
                 # Make randomly colored boxes for display
                 random.seed(track_id)
@@ -102,10 +106,17 @@ while videoCap.isOpened():
                 cv2.polylines(frame, [points], isClosed=False, color=color, thickness=2)
     
     # Reduce the timer for all tracks on the ignore list            
-    for i in ignore_list: 
+    for i in ignore_list:
+        try:
+            RED = (0, 0, 255)
+            cv2.fillPoly(frame, [diamond], RED)
+        except:
+            _ = 0
         i[1] = i[1] - 1
         if i[1] < 1: ignore_list.remove(i) # Remove tracks that have been on the list for more than a given amount of time
 
+    if override_frames > 0: override_frames -= 1
+    
     # Display and save output.
     if args.SHOW_OUTPUT:
         try:
