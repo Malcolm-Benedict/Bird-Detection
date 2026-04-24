@@ -28,7 +28,8 @@ class Args():
         self.SAVE_OUTPUT = self.config["general"]["save_output"]
         self.track_length = self.config["general"]["track_length"]
         self.SHOW_OUTPUT = self.config["general"]["show_output"]
-        self.model = self.config["model"]
+        self.model = self.config["model"]["type"]
+        self.model_conf = self.config["model"]["conf"]
           
     def make_gstreamer_pipeline(self):
         """
@@ -80,6 +81,7 @@ class Args():
             self.target_name = self.config["detector"]["target_name"]
             self.confidence_threshold = self.config["detector"]["confidence_threshold"]
             self.refractory_frames = self.config["detector"]["refractory_frames"]
+            self.override_frames = self.config["detector"]["override_frames"]
         else:
             print("Please specify detector!")
             exit()
