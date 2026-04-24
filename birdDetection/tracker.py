@@ -13,7 +13,7 @@ class YoloTracker:
         Returns:
             model: A YOLO model instance
         """
-        self.model = YOLO(model_name, task="track", verbose=do_verbose)
+        self.model = YOLO(model_name, verbose=do_verbose)
         self.track_history = defaultdict(lambda: [])
 
     def get_results(self,frame,do_verbose):

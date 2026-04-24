@@ -53,6 +53,8 @@ if args.SAVE_OUTPUT:
 tracker = YoloTracker(args.model_path + model,cmd_args.verbose)
 ignore_list = []
 
+print("Starting Capture..")
+
 # Loop to process incoming frames
 while videoCap.isOpened(): 
     ret, frame = videoCap.read()

@@ -10,5 +10,5 @@ parser = argparse.ArgumentParser(
 parser.add_argument('model')
 args = parser.parse_args()
 model_name = args.model
-model = YOLO(MODEL_PATH+model_name)
+model = YOLO(MODEL_PATH+model_name, task="track",)
 model.export(format="engine")

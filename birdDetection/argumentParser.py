@@ -39,15 +39,15 @@ class Args():
         """
         pipe = self.config["gstreamer"]
         print("Building gstreamer pipeline..")
-        return (
-            pipe["source"]+" ! "
+        return (str(
+            pipe["source"]+"! sensor-id="+str(pipe["id"])+" ! "
             +pipe["file"]+"(memory:"+pipe["memory"]+"), "
             "width="+str(pipe["input_width"])+", height="+str(pipe["input_height"])+", "
             "format="+pipe["input_format"]+", framerate="+str(pipe["framerate"])+"/1 ! "
             "nvvidconv flip-method="+str(pipe["flip_method"])+" ! "
             +pipe["file"]+", width="+str(pipe["output_width"])+", height="+str(pipe["input_height"])+", format="+pipe["output_format"]+" ! "
             "videoconvert ! "
-            +pipe["file"]+", format="+pipe["sink_format"]+" ! "+pipe["sink"]
+            +pipe["file"]+", format="+pipe["sink_format"]+" ! "+pipe["sink"])
         )
 
     def make_video_source(self):
@@ -62,6 +62,7 @@ class Args():
         elif self.video_source == "video":
             capture = cv2.VideoCapture(self.config["paths"]["video_path"] + self.config["video"])
         elif self.video_source == "gstreamer":
+            #print(self.make_gstreamer_pipeline())
             capture = cv2.VideoCapture(self.make_gstreamer_pipeline(), cv2.CAP_GSTREAMER)
         else:
             print("Please specify video source!")
