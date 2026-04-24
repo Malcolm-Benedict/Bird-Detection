@@ -13,7 +13,7 @@ paths:
 model: 
   type: yolo26s.pt # The Jetson uses .engine models
   conf: 0.01
-video: gulls.mp4
+video: Mallard.mp4
 
 detector: 
   type: GeometryMethod # Valid detectors: GeometryMethod

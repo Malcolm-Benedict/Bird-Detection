@@ -29,5 +29,8 @@ class YoloTracker:
         return results
     
     def evaluate(self):
-        res = self.model.val(data="coco.yaml")
-        return res
+        res = self.model.val(data="coco.yaml", verbose=True)
+        csv_filename = "validation_results.csv"
+        with open(csv_filename, "w") as f:
+            f.write(res.to_csv())
+        
