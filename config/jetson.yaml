@@ -22,15 +22,16 @@ detector:
   
 gstreamer:
   source: 'nvarguscamerasrc'
+  id: 0
   file: 'video/x-raw'
   memory: NVMM
   input_width: 1920
   input_height: 1080
   input_format: NV12
-  framerate: 30
+  framerate: 60
   flip_method: 2
-  output_width: 960
-  output_height: 720
+  output_width: 1920
+  output_height: 1080
   output_format: BGRx
   sink_format: BGR
   sink: appsink

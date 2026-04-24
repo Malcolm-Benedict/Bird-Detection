@@ -57,6 +57,8 @@ exit()
 ignore_list = []
 override_frames = 0
 global diamond
+print("Starting Capture..")
+
 # Loop to process incoming frames
 while videoCap.isOpened(): 
     ret, frame = videoCap.read()
