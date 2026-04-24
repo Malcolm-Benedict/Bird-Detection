@@ -27,3 +27,7 @@ class YoloTracker:
         """
         results = self.model.track(frame, stream=True, persist=True, tracker="bytetrack.yaml",verbose=do_verbose, conf=conf)
         return results
+    
+    def evaluate(self):
+        res = self.model.val(data="coco.yaml")
+        return res

@@ -1,0 +1,15 @@
+# Kindly taken from https://github.com/denishartl/jetson-yolo-intro/
+numpy==1.26.4
+matplotlib
+pandas
+pyyaml
+requests
+tqdm
+psutil
+py-cpuinfo
+seaborn
+ultralytics-thop
+ipywidgets
+polars
+scipy
+torchvision

@@ -63,4 +63,3 @@ class GeometryMethod():
         """
         theta = m.atan2((lineA.slope - lineB.slope),(1 + (lineA.slope * lineB.slope)))
         return theta
-    

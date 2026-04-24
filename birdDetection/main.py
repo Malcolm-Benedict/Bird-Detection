@@ -52,6 +52,8 @@ if args.SAVE_OUTPUT:
 
 # Initialize the tracker
 tracker = YoloTracker(args.model_path + model,cmd_args.verbose)
+print(tracker.evaluate())
+exit()
 ignore_list = []
 override_frames = 0
 global diamond
