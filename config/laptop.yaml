@@ -1,5 +1,5 @@
 general:
-  input_method: video # acceptable inputs: webcam, video, gstreamer
+  input_method: webcam # acceptable inputs: webcam, video, gstreamer
   save_output: True
   track_length: 20 # How many points will be saved in the track
   show_output: True # Whether or not the video feed will be shown

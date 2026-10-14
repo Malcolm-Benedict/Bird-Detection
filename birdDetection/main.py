@@ -10,6 +10,8 @@ import os
 import atexit
 import random
 import operator
+import time
+from collisionRecorder import CollisionRecorder
 
 # Command line arguments
 parser = argparse.ArgumentParser(prog='birdDetection', description='A program to detect birds in frame, using a YOLO backbone')
@@ -24,15 +26,13 @@ videoCap = args.make_video_source()
 detector = args.make_detector()
 model = args.model
 conf = args.model_conf
+recorder = None
     
 def exit_handler():
     videoCap.release()
     cv2.destroyAllWindows()
-    try:
-        out.release()
-        print("Saving!")  
-    except:
-        _ = 0
+    if recorder is not None:
+        recorder.close()
     print("Exiting.")
 atexit.register(exit_handler)
 
@@ -41,14 +41,13 @@ if not videoCap.isOpened():
         print("Error: Cannot open video capture")
         exit()
         
-# Params to save video
+# Keep a rolling buffer when collision recording is enabled.
+source_fps = videoCap.get(cv2.CAP_PROP_FPS)
+if not np.isfinite(source_fps) or source_fps <= 0:
+    source_fps = 30.0
 if args.SAVE_OUTPUT:
-    frameWidth = int(videoCap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frameHeight = int(videoCap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourCC = cv2.VideoWriter.fourcc(*'mp4v')  # Codec
-    current_time = str(datetime.datetime.now().isoformat())
-    saveName = args.output_path+'output-'+current_time+'.mp4'
-    out = cv2.VideoWriter(saveName, fourCC, 30, (frameWidth, frameHeight))
+    recorder = CollisionRecorder(args.output_path, source_fps)
+frame_index = 0
 
 # Initialize the tracker
 tracker = YoloTracker(args.model_path + model,cmd_args.verbose)
@@ -62,6 +61,10 @@ while videoCap.isOpened():
     ret, frame = videoCap.read()
     if not ret:
         break
+    timestamp = (frame_index / source_fps if args.video_source == 'video'
+                 else time.monotonic())
+    frame_index += 1
+    collisions = 0
     
     # Call the tracker
     results = tracker.get_results(frame, cmd_args.verbose,conf)
@@ -97,6 +100,7 @@ while videoCap.isOpened():
                 if (name == valid_name) and (prob > args.confidence_threshold) and (track_id not in map(operator.itemgetter(0),ignore_list)) and (len(track) >= 4) and (override_frames < 1):
                     COLLISION_DETECTED = detector.detect(track) # The COLLISION_DETECTED flag is used for modularity
                     if COLLISION_DETECTED:
+                        collisions += 1
                         print("\033[31mCOLLISION!\033[0m")
                         diamond = np.array([[int(x),int(y-10)],[int(x+10),int(y)],[int(x),int(y+10)],[int(x-10),int(y)]])
                         ignore_list.append([track_id, args.refractory_frames]) # Add the box to the ignore list with a timer value
@@ -127,8 +131,6 @@ while videoCap.isOpened():
         except:
             _ = 0
     
-    try:
-        out.write(frame)
-    except:
-        _ = 0
+    if recorder is not None:
+        recorder.add_frame(frame, timestamp, collisions)
     
