@@ -14,3 +14,7 @@ ipywidgets
 polars
 scipy
 torchvision
+
+# Motion segmentation and multi-object tracking
+opencv-python>=4.8,<4.12
+norfair>=2.2,<3

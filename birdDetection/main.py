@@ -1,136 +1,94 @@
+"""Run motion-blob tracking and the existing collision recorder."""
+import argparse
+import time
+
 import cv2
 import numpy as np
-from tracker import YoloTracker
-from detector import GeometryMethod
-from argumentParser import Args
-import yaml
-import datetime
-import argparse
-import os
-import atexit
-import random
-import operator
-import time
-from collisionRecorder import CollisionRecorder
 
-# Command line arguments
-parser = argparse.ArgumentParser(prog='birdDetection', description='A program to detect birds in frame, using a YOLO backbone')
-parser.add_argument('configPath', help='Path to the config. file. File must be a valid yaml file')
-parser.add_argument('-v', '--verbose', help='Display the YOLO models output info for every frame', action='store_true')
-cmd_args = parser.parse_args()
-configPath = cmd_args.configPath
+if __package__:
+    from .tracker import BlobTracker
+    from .argumentParser import Args
+    from .collisionRecorder import CollisionRecorder
+    from .trackRecorder import TrackRecorder, draw_track
+else:
+    from tracker import BlobTracker
+    from argumentParser import Args
+    from collisionRecorder import CollisionRecorder
+    from trackRecorder import TrackRecorder, draw_track
 
-# Load params. from yaml file
-args = Args(configPath)
-videoCap = args.make_video_source()
-detector = args.make_detector()
-model = args.model
-conf = args.model_conf
-recorder = None
-    
-def exit_handler():
-    videoCap.release()
-    cv2.destroyAllWindows()
-    if recorder is not None:
-        recorder.close()
-    print("Exiting.")
-atexit.register(exit_handler)
 
-# Throw an error if unable to open the video cap.
-if not videoCap.isOpened():
-        print("Error: Cannot open video capture")
-        exit()
-        
-# Keep a rolling buffer when collision recording is enabled.
-source_fps = videoCap.get(cv2.CAP_PROP_FPS)
-if not np.isfinite(source_fps) or source_fps <= 0:
-    source_fps = 30.0
-if args.SAVE_OUTPUT:
-    recorder = CollisionRecorder(args.output_path, source_fps)
-frame_index = 0
-
-# Initialize the tracker
-tracker = YoloTracker(args.model_path + model,cmd_args.verbose)
-ignore_list = []
-override_frames = 0
-global diamond
-print("Starting Capture..")
-
-# Loop to process incoming frames
-while videoCap.isOpened(): 
-    ret, frame = videoCap.read()
-    if not ret:
-        break
-    timestamp = (frame_index / source_fps if args.video_source == 'video'
-                 else time.monotonic())
-    frame_index += 1
-    collisions = 0
-    
-    # Call the tracker
-    results = tracker.get_results(frame, cmd_args.verbose,conf)
-    for result in results:
-        if result.boxes and result.boxes.is_track:
-            
-            # Plot result frame
-            boxes = result.boxes.xywh
-            class_ids = result.boxes.cls
-            track_ids = result.boxes.id.int().tolist() # This line will throw a warning, its fine I believe it is the result of a vague class output from ultralytics
-            probs = result.boxes.conf.tolist()
-            frame = result.plot()
-            
-            for box, cls, track_id, prob in zip(boxes, class_ids, track_ids, probs): # Iterate over all results
-                name = result.names[int(cls)]
-                #print(str(name) + ": " + str(prob)) #Unused display argument
-                x, y, w, h = box
-                
-                # Add point to track and discard oldest point if > max length
-                track = tracker.track_history[track_id]
-                track.append((float(x), float(y)))  
-                if len(track) > args.track_length:  
-                    track.pop(0)
-                points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-                
-                # If filtering detector by object names, only run it on tracks with that name
-                if args.target_name:
-                    valid_name = args.target_name
-                else:
-                    valid_name = name # If no name is specified, set the name valid name equal to the current one to process all tracks
-                
-                # Only run the detector for valid tracks    
-                if (name == valid_name) and (prob > args.confidence_threshold) and (track_id not in map(operator.itemgetter(0),ignore_list)) and (len(track) >= 4) and (override_frames < 1):
-                    COLLISION_DETECTED = detector.detect(track) # The COLLISION_DETECTED flag is used for modularity
-                    if COLLISION_DETECTED:
-                        collisions += 1
-                        print("\033[31mCOLLISION!\033[0m")
-                        diamond = np.array([[int(x),int(y-10)],[int(x+10),int(y)],[int(x),int(y+10)],[int(x-10),int(y)]])
-                        ignore_list.append([track_id, args.refractory_frames]) # Add the box to the ignore list with a timer value
-                        override_frames += args.override_frames
-                        
-                # Make randomly colored boxes for display
-                random.seed(track_id)
-                color = tuple(random.randint(0, 255) for _ in range(3))
-                cv2.polylines(frame, [points], isClosed=False, color=color, thickness=2)
-    
-    # Reduce the timer for all tracks on the ignore list            
-    for i in ignore_list:
+def main():
+    parser = argparse.ArgumentParser(description='Track moving bird candidates with OpenCV and Norfair')
+    parser.add_argument('configPath', help='Path to YAML configuration')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Print observed track counts')
+    cmd = parser.parse_args()
+    args = Args(cmd.configPath)
+    detector = args.make_detector()
+    tracker = BlobTracker(args.config.get('blob', {}), args.track_length)
+    capture = args.make_video_source()
+    recorder = None
+    track_recorder = None
+    try:
+        if not capture.isOpened():
+            raise RuntimeError('Cannot open video capture')
+        fps = capture.get(cv2.CAP_PROP_FPS)
+        if not np.isfinite(fps) or fps <= 0:
+            fps = 30.0
+        if args.SAVE_OUTPUT:
+            recorder = CollisionRecorder(args.output_path, fps)
+        if args.config['general'].get('save_tracks', True):
+            track_recorder = TrackRecorder(args.output_path, fps)
+        frame_index = 0
+        started = time.monotonic()
+        ignore_until = {}
+        override_until = 0
+        print('Starting capture (stationary camera; blobs are unclassified bird candidates).')
+        while capture.isOpened():
+            ok, frame = capture.read()
+            if not ok:
+                break
+            timestamp = frame_index / fps if args.video_source == 'video' else time.monotonic() - started
+            observations = tracker.update(frame)
+            if track_recorder is not None:
+                track_recorder.add_frame(frame, timestamp, observations, tracker.track_history)
+            collisions = 0
+            ignore_until = {key: expiry for key, expiry in ignore_until.items() if expiry > frame_index}
+            for obj in observations:
+                track_id = obj['id']
+                cx, cy = obj['center']
+                track = list(tracker.track_history[track_id])
+                draw_track(frame, track_id, track, obj['box'])
+                if (len(track) >= 4 and track_id not in ignore_until
+                        and frame_index >= override_until and detector.detect(track)):
+                    collisions += 1
+                    ignore_until[track_id] = frame_index + args.refractory_frames
+                    override_until = frame_index + args.override_frames
+                    cv2.circle(frame, (int(cx), int(cy)), 12, (0, 0, 255), -1)
+                    print(f'Collision candidate: track {track_id}')
+            if cmd.verbose:
+                print(f'Frame {frame_index}: {len(observations)} observed tracks')
+            if recorder is not None:
+                recorder.add_frame(frame, timestamp, collisions)
+            frame_index += 1
+            if args.SHOW_OUTPUT:
+                cv2.imshow('Bird candidates', frame)
+                if args.config['general'].get('show_mask', False):
+                    cv2.imshow('Motion mask', tracker.mask)
+                if cv2.waitKey(1) & 0xFF in (27, ord('q')):
+                    break
+    finally:
+        capture.release()
         try:
-            RED = (0, 0, 255)
-            cv2.fillPoly(frame, [diamond], RED)
-        except:
-            _ = 0
-        i[1] = i[1] - 1
-        if i[1] < 1: ignore_list.remove(i) # Remove tracks that have been on the list for more than a given amount of time
+            if recorder is not None:
+                recorder.close()
+        finally:
+            try:
+                if track_recorder is not None:
+                    track_recorder.close()
+            finally:
+                if args.SHOW_OUTPUT:
+                    cv2.destroyAllWindows()
 
-    if override_frames > 0: override_frames -= 1
-    
-    # Display and save output.
-    if args.SHOW_OUTPUT:
-        try:
-            cv2.imshow('Camera',frame)
-            cv2.waitKey(1)
-        except:
-            _ = 0
-    
-    if recorder is not None:
-        recorder.add_frame(frame, timestamp, collisions)
-    
+
+if __name__ == '__main__':
+    main()

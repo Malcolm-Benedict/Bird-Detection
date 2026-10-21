@@ -2,6 +2,8 @@ general:
   input_method: gstreamer # acceptable inputs: webcam, video, gstreamer
   save_output: False
   track_length: 20 # How many points will be saved in the track
+  save_tracks: True # Save a separate MP4 for every confirmed track
+  show_mask: False
   show_output: True # Whether or not the video feed will be shown
   
 
@@ -10,14 +12,11 @@ paths:
   output_path: 'outputs/'
   video_path: 'videos/'
 
-model: yolo26n.engine # The Jetson uses .engine models
 video: Mallard.mp4
 
 detector: 
   type: GeometryMethod # Valid detectors: GeometryMethod
   threshold: 45 # Angle for GeometryMethod
-  target_name: # Leave blank to check all objects
-  confidence_threshold: 0.8 # The model returns a confidence score between 0 and 1
   refractory_frames: 40 # How many frames after a detection will the model ignore the track to prevent double events
   
 gstreamer:
@@ -35,3 +34,58 @@ gstreamer:
   output_format: BGRx
   sink_format: BGR
   sink: appsink
+
+# Motion detection and tracking for a stationary camera.
+# Areas count foreground pixels; distances and kernel sizes use original-frame pixels.
+blob:
+  # Smallest blob to keep after mask cleanup. Raise this to reject small specks;
+  # lower it to keep smaller or more distant birds.
+  min_area: 12
+
+  # Largest blob to keep after mask cleanup. Lower this to reject large moving
+  # regions; raise it if nearby birds are being discarded.
+  max_area: 20000
+
+  # Width and height of the Gaussian blur applied before motion detection.
+  # Use 0 or 1 to disable, or an odd size (3, 5, ...). Larger sizes smooth noise
+  # more strongly but can hide small birds.
+  blur_size: 3
+
+  # Opening kernel: removes small foreground specks and thin connections.
+  # Use 0 or 1 to disable, or an odd size. Larger sizes may erase distant birds.
+  open_size: 0
+
+  # Closing kernel: fills small holes and connects nearby foreground pixels.
+  # Use 0 or 1 to disable, or an odd size. Larger sizes can merge separate birds.
+  close_size: 3
+
+  # Initial frames used to learn the background without reporting tracks.
+  # For example, 30 frames is one second of footage at 30 FPS.
+  warmup_frames: 30
+
+  # Background model's history length, in frames. With automatic learning,
+  # a larger value generally adapts more slowly to changes in the scene.
+  history: 500
+
+  # MOG2 background-match threshold (not a brightness difference in pixels).
+  # Lower values detect subtler changes but more noise; higher values are less sensitive.
+  var_threshold: 16
+
+  # Background learning rate: -1 selects automatic adaptation; 0 freezes updates
+  # after initial setup; values from 0 to 1 set the rate explicitly.
+  # Higher rates adapt faster and may absorb slow or stationary objects.
+  learning_rate: -1
+
+  # Maximum matching distance, in pixels, between a new blob center and a track's
+  # predicted center. Raise for faster motion; too high can swap nearby track IDs.
+  distance_threshold: 50
+
+  # Maximum track persistence score. Matches build the score; missed frames lower it.
+  # Higher values let established tracks (and their videos) survive longer gaps.
+  # Newer tracks may disappear sooner because their score has not built up yet.
+  hit_counter_max: 15
+
+  # A new track's persistence score must exceed this before it is displayed/saved.
+  # Higher values reject brief noise but delay recording; 0 confirms immediately.
+  # Must be less than hit_counter_max. With no misses, 3 confirms on detection 4.
+  initialization_delay: 3

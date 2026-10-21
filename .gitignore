@@ -1,5 +1,7 @@
 .venv/
-tests/
+tests/*
+!tests/test_blob_pipeline.py
+!tests/test_track_recorder.py
 .vscode/
 outputs/*
 birdDetection/__pycache__/*
